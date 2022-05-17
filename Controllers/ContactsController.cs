@@ -30,15 +30,16 @@ namespace PlatformsService.Controller
         [HttpGet("[action]")]
         public async Task<ActionResult<IEnumerable<ContactsReadDTo>>> GetContacts(CancellationToken cancellationToken)
         {
-            await Task.Delay(3000, cancellationToken);
-            Console.WriteLine("-->Getting platforms....");
-            var contacts = _repository.GetAll();
-            if (contacts == null)
+            try
             {
-                Console.WriteLine("---> have not data----");
-                return BadRequest();
+                await Task.Delay(3000, cancellationToken);
+                var contacts = _repository.GetAll(cancellationToken);
+                return Ok(_mapper.Map<IEnumerable<ContactsReadDTo>>(contacts.Result ?? new List<Contacts>()));
             }
-            return Ok(_mapper.Map<IEnumerable<ContactsReadDTo>>(contacts));
+            catch (Exception e)
+            {
+                return BadRequest();                
+            }
         }
         /// <summary>
         /// 
@@ -49,19 +50,22 @@ namespace PlatformsService.Controller
         [HttpGet("[action]")]
         public async Task<ActionResult<IEnumerable<ContactsReadDTo>>> GetContactsByName(CancellationToken cancellationToken, string Name)
         {
-            Console.WriteLine("-->Getting platforms....");
-            await Task.Delay(3000, cancellationToken);
-            if (string.IsNullOrEmpty(Name))
+            try
             {
-                return BadRequest("Value Cannot Be null or empty!");
+                await Task.Delay(3000, cancellationToken);
+                if (string.IsNullOrEmpty(Name))
+                {
+                    return BadRequest("Value Cannot Be null or empty!");
+                }
+                var platforms = _repository.GetContactsByName(Name, cancellationToken);
+
+                return Ok(_mapper.Map<IEnumerable<ContactsReadDTo>>(platforms.Result.ToList() ?? new List<Contacts>()));
             }
-            var platforms = _repository.GetContactsByName(Name);
-            if (platforms == null)
+            catch (Exception)
             {
-                Console.WriteLine("---> have not data----");
                 return BadRequest();
             }
-            return Ok(_mapper.Map<IEnumerable<ContactsReadDTo>>(platforms));
+           
         }
         /// <summary>
         /// 
@@ -70,16 +74,20 @@ namespace PlatformsService.Controller
         /// <param name="Contact"></param>
         /// <returns></returns>
         [HttpPost("[action]")]
-        public async Task<ActionResult> CreateContact(CancellationToken cancellationToken, ContactsCreateDTo Contact)
+        public async Task<ActionResult> CreateContact(ContactsCreateDTo Contact)
         {
             if (Contact == null)
             {
                 return BadRequest("Value Cannot Be Null!");
             }
-            await Task.Delay(3000, cancellationToken);
+            await Task.Delay(3000);
             var contact = _mapper.Map<Contacts>(Contact);
             _repository.AddContacts(contact);
-            var res = _repository.SaveChanges();
+            bool res = _repository.SaveChanges();
+            if (!res)
+            {
+                return BadRequest();
+            }
             return Ok();
         }
     }

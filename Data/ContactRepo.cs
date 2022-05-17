@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using PlatformService.Models;
 
 namespace PlatformService.Data
@@ -16,16 +17,39 @@ namespace PlatformService.Data
             _context.Contacts.Add(contact);
         }
 
-        public IEnumerable<Contacts> GetAll()
+        public async Task<IEnumerable<Contacts>> GetAll(CancellationToken cancellationToken)
         {
-            return _context.Contacts.ToList<Contacts>();
+            try
+            {
+                return await _context.Contacts.ToListAsync<Contacts>(cancellationToken);
+            }
+            catch (Exception e)
+            {
+                throw new TaskCanceledException("Operation Cancelled!");
+            }
         }
 
-        public IEnumerable<Contacts> GetContactsByName(string name)
+        public async Task<IEnumerable<Contacts>> GetContactsByName(string name, CancellationToken cancellationToken)
         {
-            return _context.Contacts.Where(item=>item.Name.Contains(name)).ToList<Contacts>();
+            List<Contacts> items = new List<Contacts>();
+            try
+            {
+                foreach (var item in _context.Contacts.ToArray())
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (item.Name.Contains(name))
+                    {
+                        items.Add(item);
+                    }
+                }
+                return items;
+            }
+            catch (TaskCanceledException e)
+            {
+                throw new TaskCanceledException("Operation Cancelled!");
+            }
         }
-        
+
         public bool SaveChanges()
         {
             return (_context.SaveChanges() >= 0);
