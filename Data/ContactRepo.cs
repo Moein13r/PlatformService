@@ -13,10 +13,6 @@ namespace PlatformService.Data
 
         public void AddContacts(Contacts? contact)
         {
-            if (contact == null)
-            {
-                throw new NotImplementedException();
-            }
             _context.Contacts.Add(contact);
         }
 
